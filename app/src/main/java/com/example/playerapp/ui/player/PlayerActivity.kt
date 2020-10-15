@@ -1,36 +1,52 @@
 package com.example.playerapp.ui.player
 
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.util.Log
+import android.annotation.SuppressLint
+import android.view.View
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.playerapp.R
+import com.example.playerapp.base.BaseActivity
 import com.example.playerapp.models.Song
 import com.example.playerapp.ui.player.adapter.PlayerAdapter
+import com.example.playerapp.ui.song.SongActivity
 import kotlinx.android.synthetic.main.activity_player.*
 import org.koin.android.ext.android.inject
 
-class PlayerActivity : AppCompatActivity() {
+class PlayerActivity : BaseActivity<PlayerViewModel>(R.layout.activity_player), PlayerAdapter.OnItemClick {
 
-    private val viewModel by inject<PlayerViewModel>()
+    override val viewModel by inject<PlayerViewModel>()
     private lateinit var list: MutableList<Song>
     private lateinit var adapter: PlayerAdapter
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_player)
-        getCover()
+    override fun setUpViews() {
         setupRecycler()
     }
 
+    override fun setUpObservers() {
+        getCover()
+        loadingData()
+    }
+
+    private fun loadingData() {
+        viewModel.loading.observe(this, {
+            if (it == true) progressBar.visibility = View.GONE
+        })
+    }
+
+    override fun setUpListeners() {
+    }
+
+    @SuppressLint("UseCompatLoadingForDrawables")
     private fun setupRecycler() {
         list = mutableListOf()
-        adapter = PlayerAdapter(list)
+        adapter = PlayerAdapter(list, this)
         recyclerView.apply {
             layoutManager = LinearLayoutManager(this@PlayerActivity)
             adapter = this@PlayerActivity.adapter
-            addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
+            var itemDecoration = DividerItemDecoration(context, DividerItemDecoration.VERTICAL)
+            itemDecoration.setDrawable(getDrawable(R.drawable.divider)!!)
+            addItemDecoration(itemDecoration)
         }
     }
 
@@ -39,7 +55,12 @@ class PlayerActivity : AppCompatActivity() {
             if (!it.isNullOrEmpty()) {
                 list.addAll(it)
                 adapter.notifyDataSetChanged()
+                viewModel.loading.value = true
             }
         })
+    }
+
+    override fun onItemClick(item: Song) {
+        SongActivity.instanceActivity(this, item)
     }
 }

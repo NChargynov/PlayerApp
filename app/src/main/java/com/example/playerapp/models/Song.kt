@@ -1,5 +1,4 @@
 package com.example.playerapp.models
-
 import com.google.gson.annotations.SerializedName
 
 data class Song(
